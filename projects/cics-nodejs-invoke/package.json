@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cicsdev/cics-nodejs-invoke.git"
+    "url": "https://github.com/ibm-z-pot/test-client.git"
   },
   "main": "server.js",
   "scripts": {
