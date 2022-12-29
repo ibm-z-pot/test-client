@@ -9,6 +9,7 @@
 
 const express = require('express');
 const cics = require('ibm-cics-api');
+const axios = require('axios');
 
 var bodyParser = require('body-parser');
 var os = require('os');
@@ -20,16 +21,16 @@ app.use(bodyParser.json());
 
 // Read in variables
 var port = process.env.PORT || 3000;
-var catalogServer = process.env.CATALOG_SERVER || 'http://example.org:3001';
+var apiScheme = process.env.API_SCHEME || 'http';
+var apiHost = process.env.API_HOST || 'zt01.mop.ibm';
+var apiPort = process.env.API_PORT || '8080';
+var apiContextRoot = process.env.API_CONTEXT_ROOT || '';
+// Global axios defaults
+axios.defaults.baseURL = apiScheme + '://' + apiHost + ':' + apiPort + apiContextRoot;
 
 var server = app.listen(port, function () {
   console.log('This application is running on platform: ' + process.platform);
-
-  if (process.env.hasOwnProperty('CICS_USSHOME')) {
-    console.log('API requests from this application will use the CICS locally-optimized transport');
-  } else {
-    console.log('API requests from this application will call CICS using URI: ' + catalogServer);
-  }
+  console.log('API requests from this application will call a z/OS Connect API Server using URI: ' + axios.defaults.baseURL);
 
   dns.lookup(os.hostname(), { hints: dns.ADDRCONFIG }, function (err, ip) {
     if (err || ip == undefined || ip == null) {
@@ -57,53 +58,51 @@ app.use('/jquery', express.static(__dirname + '/node_modules/jquery/dist'));
 // jQuery calls this URL, this function calls two REST APIs, merges the responses and sends it to the client
 app.get('/catalogManager/items', function (req, res) {
   // Create empty array
-  var allItemsArray = [];
+  var itemsArray = [];
 
-  let inquireRequest1 = {
-    'inquireCatalogRequest': {
-      'startItemRef': 10,
-    }
-  };
+  let path1 = '/items?startItemID=10'
+  let path2 = '/items?startItemID=160'
 
-  let inquireRequest2 = {
-    'inquireCatalogRequest': {
-      'startItemRef': 160,
-    }
-  };
+  console.log('API Request:  Get first set of items using GET ' + axios.defaults.baseURL + path1);
 
-  let url = catalogServer + '/exampleApp/inquireCatalogWrapper';
-
-  console.log('Get first set of items API request: ' + url);
-  console.dir(inquireRequest1);
-
-  var promise1 = cics.invoke(url, inquireRequest1)
-    .then(function (json) {
-      console.log('Get first set of items API response: ');
-      console.dir(json.inquireCatalogResponse.catalogItem);
-
-      allItemsArray = allItemsArray.concat(json.inquireCatalogResponse.catalogItem);
+  var promise1 = axios.get('/items?startItemID=10')
+    .then(function (response) {
+      console.log('API Response: Get first set of items returned ' + response.data.totalItems + ' items: ');
+      console.dir(response.data.items);
+      itemsArray = itemsArray.concat(response.data.items);      
+    })
+    .catch(function (error) {
+      console.log(error.toJSON());
+    })
+    .finally(function () {
+      // always executed
     });
 
-  console.log('Get second set of items API request: ' + url);
-  console.dir(inquireRequest2);
+  console.log('API Request:  Get second set of items using GET ' + axios.defaults.baseURL + path2);
 
-  var promise2 = cics.invoke(url, inquireRequest2)
-    .then(function (json) {
-      console.log('Get second set of items API response: ');
-      console.dir(json.inquireCatalogResponse.catalogItem);
-
-      allItemsArray = allItemsArray.concat(json.inquireCatalogResponse.catalogItem);
+  var promise2 = axios.get('/items?startItemID=160')
+    .then(function (response) {
+      console.log('API Response: Get second set of items returned ' + response.data.totalItems + ' items: ');
+      console.dir(response.data.items);
+      itemsArray = itemsArray.concat(response.data.items);      
+    })
+    .catch(function (error) {
+      console.log(error.toJSON());
+    })
+    .finally(function () {
+      // always executed
     });
 
   // When both responses come back, send the array of items to client
   Promise.all([promise1, promise2])
     .then(values => {
-      res.send(JSON.stringify(allItemsArray));
+      res.send(JSON.stringify(itemsArray));
     })
     .catch(function (err) {
       console.log('Error during CICS invoke: ' + err);
       res.status(500);
     });
+
 });
 
 // Buying POST function
@@ -121,20 +120,21 @@ app.post('/catalogManager/buy/:id/:numberOfItems', function (req, res) {
 
   console.log('Buy items API request: ' + url);
   console.dir(opts);
-  
-  cics.invoke(url, opts)
-    .then(function (response) {
-      console.log('Buy items API response:');
-      console.dir(response);
 
-      if (response.placeOrderResponse.returnCode > 0) {
-        res.status(500);
-      }
+  axios.post('/orders?itemNumber=10&quantity=1')
+    .then(function (response) {
+      console.log('SF: Buy items API response: ');
+      console.log(response.status);
+      console.log(response.statusText);
+      console.log(response.data);
+
       return response;
-    }, function (err) {
-      console.err('Buy items API response - error during CICS invoke: ' + err);
     })
-    .then(function (data) {
+    .catch(function (error) {
+      console.log(error.toJSON());
+    })
+    .finally(function (data) {
+      // always executed
       res.send(JSON.stringify(data));
     });
 });

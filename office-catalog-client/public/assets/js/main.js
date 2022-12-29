@@ -43,11 +43,17 @@ function refreshItems(itemsLength,divToAppend) {
 
       for (i = 0; i < itemsLength; i++) {
 
-        var item_ref = allItemsJson[i].itemRef;
-        var item_description = allItemsJson[i].itemDescription;
-        var item_cost = "£" + parseFloat(allItemsJson[i].itemCost).toFixed(2);
-        var item_stock = "In Stock: " + allItemsJson[i].inStock;
-        var item_maxnumber = allItemsJson[i].inStock;
+        //var item_ref = allItemsJson[i].itemRef;
+        //var item_description = allItemsJson[i].itemDescription;
+        //var item_cost = "£" + parseFloat(allItemsJson[i].itemCost).toFixed(2);
+        //var item_stock = "In Stock: " + allItemsJson[i].inStock;
+        //var item_maxnumber = allItemsJson[i].inStock;
+
+        var item_ref = allItemsJson[i].information.itemReference;
+        var item_description = allItemsJson[i].information.description;
+        var item_cost = "£" + parseFloat(allItemsJson[i].information.cost).toFixed(2);
+        var item_stock = "In Stock: " + allItemsJson[i].information.stock;
+        var item_maxnumber = allItemsJson[i].information.stock;
 
         // Some returned items are blank (item_ref=0). Don't attempt to make cards from these
         if (item_ref != 0) {
