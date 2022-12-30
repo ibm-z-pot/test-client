@@ -8,7 +8,6 @@
 // disclosure restricted by GSA ADP Schedule Contract with IBM Corp
 
 const express = require('express');
-const cics = require('ibm-cics-api');
 const axios = require('axios');
 
 var bodyParser = require('body-parser');
@@ -23,8 +22,9 @@ app.use(bodyParser.json());
 var port = process.env.PORT || 3000;
 var apiScheme = process.env.API_SCHEME || 'http';
 var apiHost = process.env.API_HOST || 'zt01.mop.ibm';
-var apiPort = process.env.API_PORT || '8080';
+var apiPort = process.env.API_PORT || '9080';
 var apiContextRoot = process.env.API_CONTEXT_ROOT || '';
+
 // Global axios defaults
 axios.defaults.baseURL = apiScheme + '://' + apiHost + ':' + apiPort + apiContextRoot;
 
@@ -60,12 +60,12 @@ app.get('/catalogManager/items', function (req, res) {
   // Create empty array
   var itemsArray = [];
 
-  let path1 = '/items?startItemID=10'
-  let path2 = '/items?startItemID=160'
+  let itemsPath1 = '/items?startItemID=10'
+  let itemsPath2 = '/items?startItemID=160'
 
-  console.log('API Request:  Get first set of items using GET ' + axios.defaults.baseURL + path1);
+  console.log('API Request:  Get first set of items using GET ' + axios.defaults.baseURL + itemsPath1);
 
-  var promise1 = axios.get('/items?startItemID=10')
+  var promise1 = axios.get(itemsPath1)
     .then(function (response) {
       console.log('API Response: Get first set of items returned ' + response.data.totalItems + ' items: ');
       console.dir(response.data.items);
@@ -78,9 +78,9 @@ app.get('/catalogManager/items', function (req, res) {
       // always executed
     });
 
-  console.log('API Request:  Get second set of items using GET ' + axios.defaults.baseURL + path2);
+  console.log('API Request:  Get second set of items using GET ' + axios.defaults.baseURL + itemsPath2);
 
-  var promise2 = axios.get('/items?startItemID=160')
+  var promise2 = axios.get(itemsPath2)
     .then(function (response) {
       console.log('API Response: Get second set of items returned ' + response.data.totalItems + ' items: ');
       console.dir(response.data.items);
@@ -98,8 +98,8 @@ app.get('/catalogManager/items', function (req, res) {
     .then(values => {
       res.send(JSON.stringify(itemsArray));
     })
-    .catch(function (err) {
-      console.log('Error during CICS invoke: ' + err);
+    .catch(function (error) {
+      console.log('Error during GET all items: ' + error);
       res.status(500);
     });
 
@@ -107,35 +107,25 @@ app.get('/catalogManager/items', function (req, res) {
 
 // Buying POST function
 app.post('/catalogManager/buy/:id/:numberOfItems', function (req, res) {
-  var url = catalogServer + '/exampleApp/placeOrderWrapper';
 
-  var opts = {
-    'placeOrderRequest': {
-      'orderRequest': {
-        'itemReference': req.params.id,
-        'quantityRequired': req.params.numberOfItems
-      }
-    }
-  };
+  let ordersPath = '/orders?itemNumber=' + req.params.id + '&quantity=' + req.params.numberOfItems
 
-  console.log('Buy items API request: ' + url);
-  console.dir(opts);
+  console.log('API Request:  Buy items using POST ' + axios.defaults.baseURL + ordersPath);
 
-  axios.post('/orders?itemNumber=10&quantity=1')
+  axios.post(ordersPath)
     .then(function (response) {
-      console.log('SF: Buy items API response: ');
-      console.log(response.status);
-      console.log(response.statusText);
+      console.log('API Response: Buy items API returned: ' + response.status + ' ' + response.statusText);
       console.log(response.data);
-
-      return response;
+      res.send(JSON.stringify(response.data));
+      // return response;
     })
     .catch(function (error) {
       console.log(error.toJSON());
-    })
-    .finally(function (data) {
-      // always executed
-      res.send(JSON.stringify(data));
+      res.send(JSON.stringify(error.message));
+//    })
+//    .finally(function (data) {
+//      // always executed
+//      res.send(JSON.stringify(data));
     });
 });
 

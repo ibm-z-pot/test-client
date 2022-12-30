@@ -119,6 +119,7 @@ function buyItem(id) {
     contentType: 'application/json',
     success: function (r) {
       alert("Thank you for buying " + numberOfItems + " order(s) of " + nameOfItem + "!");
+      alert(r);
 
       /*If successful, refresh page*/
       window.location.reload()
