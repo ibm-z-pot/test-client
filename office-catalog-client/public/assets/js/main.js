@@ -118,8 +118,8 @@ function buyItem(id) {
     url: buyurl,
     contentType: 'application/json',
     success: function (r) {
-      alert("Thank you for buying " + numberOfItems + " order(s) of " + nameOfItem + "!");
-      alert(r);
+      alert("Ordering " + numberOfItems + " item(s) of " + nameOfItem + ". Response from server... " + r);
+      // alert(r);
 
       /*If successful, refresh page*/
       window.location.reload()
